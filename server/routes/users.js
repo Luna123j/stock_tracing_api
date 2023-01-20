@@ -85,6 +85,16 @@ router.post("/logout", (req, res) => {
   res.status(200).json({ message: "logged out" });
 });
 
+router.get("/portfolio", (req, res) => {
+  const user_id = req.session.userId;
+  if (!user_id) {
+    return res.status(400).json({ message: "Please login" })
+  }
+  users.getUserById(user_id).then(data => {
+    console.log(data);
+    return res.json({ users: data });
+  })
+})
 
 
 router.post("/addbalance", async(req, res) => {
