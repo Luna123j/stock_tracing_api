@@ -112,7 +112,7 @@ router.post("/addbalance", async(req, res) => {
       description: "stripe charge"
     })
   } catch (err) {
-    res.send(err);
+    return res.status(404).json({payment_error:err});
   }
 
   if(chargeInfo.status ==  "succeeded"){
