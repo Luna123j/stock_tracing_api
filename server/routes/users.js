@@ -3,6 +3,7 @@ var express = require('express');
 var router = express.Router();
 const bcrypt = require("bcryptjs");
 const users = require('../db/queries/users');
+const shares = require('../db/queries/shares');
 const stripe = require('stripe')(process.env.STRIPE_KEY);
 
 
@@ -40,7 +41,7 @@ router.post('/register', (req, res) => {
         return res.status(404).json({ message: "Username exist" });
       } else {
 
-        users.createUser(user.username, bcrypt.hashSync(user.password, 10))
+        users.createUser(user.username,user.email, bcrypt.hashSync(user.password, 10))
           .then((data) => {
             console.log(data);
             req.session.userId = data.id;
@@ -97,7 +98,7 @@ router.get("/portfolio", (req, res) => {
 })
 
 
-router.post("/addbalance", async(req, res) => {
+router.post("/addbalance", async (req, res) => {
   const user_id = req.session.userId;
   const amount = req.body.amount;
   let balance;
@@ -112,26 +113,66 @@ router.post("/addbalance", async(req, res) => {
     return res.status(400).json({ message: "Please enter valid value" })
   }
 
-  
+
   try {
-    
-    chargeInfo= await stripe.charges.create({
+
+    chargeInfo = await stripe.charges.create({
       amount: amount,
       currency: "cad",
       source: "tok_visa",
       description: "stripe charge"
     })
   } catch (err) {
-    return res.status(404).json({payment_error:err});
+    return res.status(404).json({ payment_error: err });
   }
 
-  if(chargeInfo.status ==  "succeeded"){
+  if (chargeInfo.status == "succeeded") {
     users.addBalance(user_id, amount).then(data => {
       return res.status(200).json({ message: "balance added", data: data })
     });
   }
 
 })
+
+// router.post("/buyshare", async (req, res) => {
+//   const user_id = req.session.userId;
+//   const share_name = req.body.share_name;
+
+//   let balance;
+//   let shareInfo;
+//   let chargeInfo;
+
+//   console.log(req.session)
+
+//   if (!user_id) {
+//     return res.status(400).json({ message: "Please login" })
+//   }
+
+//   try {
+//     shareInfo = await shares.getShareInfo(share_name)
+//   } catch (err) {
+//     return res.status(404).json({ payment_error: err });
+//   }
+
+//   if (!shareInfo) {
+//     return res.status(404).json({ message: "Share does not exist" })
+//   }
+
+//   users.checkBalance(user_id).then(data => {
+//     if (data.balance < shareInfo.price) {
+//       return res.status(400).json({ message: "don't have enough balance" })
+//     } else {
+//       users.useBalance(user_id, shareInfo.price).then(() => {
+//         users.boughtShare(user_id, shareInfo).then(data => {
+//           return res.status(200).json({ message: "share bought successfully!", data: data })
+//         });
+//       })
+//     }
+
+//   })
+
+// })
+
 
 module.exports = router;
 

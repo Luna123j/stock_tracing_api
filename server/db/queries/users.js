@@ -18,8 +18,8 @@ const getUserByusername = username => {
   })
 }
 
-const createUser = (username, password) => {
-  return db.query("INSERT INTO users (username, password) VALUES ($1,$2) RETURNING id", [username, password]).then(data => {
+const createUser = (username,email, password) => {
+  return db.query("INSERT INTO users (username,email,password) VALUES ($1,$2,$3) RETURNING id", [username,email, password]).then(data => {
     return data.rows;
   })
 }
@@ -45,4 +45,22 @@ const useBalance = (user_id, amount) => {
     })
 }
 
-module.exports = { getAllUsers, getUserById,getUserByusername, createUser, checkBalance, addBalance, useBalance }
+const boughtShare = (user_id, shareIfo) => {
+  return db.query("UPDATE users SET boughtshare = array_append(boughtshare, $1) WHERE id = $2 RETURNING *",[shareIfo,user_id]).then(data => 
+    {
+      return data.rows;
+    })
+}
+
+const soldShare = (user_id, amount) => {
+  return db.query("UPDATE users SET soldshare = array_append(soldshare, $1) WHERE id = $2 RETURNING *",[shareIfo,user_id]).then(() => 
+    {
+      return db.query("UPDATE users SET boughtshare = array_remove(boughtshare, $1) WHERE id = $2 RETURNING *",[shareIfo,user_id]).then(data => 
+        {
+          return data.rows;
+        })
+    })
+}
+
+
+module.exports = { getAllUsers, getUserById,getUserByusername, createUser, checkBalance, addBalance, useBalance,boughtShare, soldShare}
